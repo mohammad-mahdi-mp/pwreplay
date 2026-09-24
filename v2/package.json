@@ -1,0 +1,8 @@
+{
+  "name": "fx-replay-v2",
+  "productName": "Market Replay 2",
+  "version": "2.0.0",
+  "main": "main.js",
+  "license": "MIT",
+  "description": "Manual market replay and backtesting workspace v2"
+}
