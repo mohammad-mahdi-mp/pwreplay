@@ -1,0 +1,19 @@
+{
+  "name": "fx-replay",
+  "productName": "Market Replay",
+  "version": "1.0.0",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "author": "",
+  "license": "MIT",
+  "description": "برنامه ریپلی دستی بازار فارکس و کریپتو",
+  "dependencies": {
+    "codemirror": "^5.65.21",
+    "klinecharts": "^9.8.12"
+  },
+  "devDependencies": {
+    "electron": "^41.7.1"
+  }
+}
