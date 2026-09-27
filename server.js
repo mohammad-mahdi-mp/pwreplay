@@ -40,6 +40,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  let filePath;
   // Serve v2 at root
   if (pathname === '/' || pathname === '') {
     filePath = path.join(ROOT_DIR, 'v2', 'renderer', 'index.html');
