@@ -197,6 +197,13 @@ export function resize () {
   if (chart) chart.resize();
 }
 
+export function setChartType (type) {
+  if (!chart) return;
+  const valid = ['candle_solid', 'candle_stroke', 'ohlc', 'area'];
+  const target = valid.includes(type) ? type : 'candle_solid';
+  chart.setStyles({ candle: { type: target } });
+}
+
 export function applyAppearance ({ theme = 'dark', accent = '#e8b339' } = {}) {
   if (!chart) return;
   const light = theme === 'light';
@@ -258,6 +265,114 @@ function registerCustomShapes () {
       const [c1, c2] = coordinates;
       const r = Math.sqrt(Math.pow(c2.x - c1.x, 2) + Math.pow(c2.y - c1.y, 2));
       return [{ key: 'circle', type: 'circle', attrs: { x: c1.x, y: c1.y, r } }];
+    }
+  });
+
+  // موقعیت خرید (Long Position Risk/Reward)
+  K.registerOverlay({
+    name: 'longPos',
+    totalStep: 3,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    createPointFigures: ({ coordinates }) => {
+      if (coordinates.length < 2) return [];
+      const [c1, c2] = coordinates;
+      const left = Math.min(c1.x, c2.x);
+      const right = Math.max(c1.x, c2.x) + (Math.abs(c2.x - c1.x) < 20 ? 100 : 0);
+      const width = Math.max(40, right - left);
+      const entryY = c1.y;
+      const targetY = Math.min(c1.y, c2.y);
+      const targetHeight = Math.max(20, Math.abs(entryY - targetY));
+      const stopHeight = targetHeight * 0.5; // 1:2 R:R
+      const stopY = entryY + stopHeight;
+
+      return [
+        {
+          key: 'targetBox',
+          type: 'rect',
+          attrs: { x: left, y: targetY, width, height: targetHeight },
+          styles: { style: 'stroke_fill', color: 'rgba(14, 203, 129, 0.18)', borderColor: '#0ecb81', borderSize: 1.2 }
+        },
+        {
+          key: 'stopBox',
+          type: 'rect',
+          attrs: { x: left, y: entryY, width, height: stopHeight },
+          styles: { style: 'stroke_fill', color: 'rgba(246, 70, 93, 0.18)', borderColor: '#f6465d', borderSize: 1.2 }
+        },
+        {
+          key: 'entryLine',
+          type: 'line',
+          attrs: { coordinates: [{ x: left, y: entryY }, { x: left + width, y: entryY }] },
+          styles: { style: 'dashed', color: '#e8eaed', size: 1.2, dashedValue: [3, 3] }
+        },
+        {
+          key: 'targetText',
+          type: 'text',
+          attrs: { x: left + 6, y: targetY + 14, text: 'TARGET (2.0R)' },
+          styles: { color: '#0ecb81', size: 10, family: 'monospace', weight: 'bold' }
+        },
+        {
+          key: 'stopText',
+          type: 'text',
+          attrs: { x: left + 6, y: stopY - 6, text: 'STOP (1.0R)' },
+          styles: { color: '#f6465d', size: 10, family: 'monospace', weight: 'bold' }
+        }
+      ];
+    }
+  });
+
+  // موقعیت فروش (Short Position Risk/Reward)
+  K.registerOverlay({
+    name: 'shortPos',
+    totalStep: 3,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    createPointFigures: ({ coordinates }) => {
+      if (coordinates.length < 2) return [];
+      const [c1, c2] = coordinates;
+      const left = Math.min(c1.x, c2.x);
+      const right = Math.max(c1.x, c2.x) + (Math.abs(c2.x - c1.x) < 20 ? 100 : 0);
+      const width = Math.max(40, right - left);
+      const entryY = c1.y;
+      const targetY = Math.max(c1.y, c2.y);
+      const targetHeight = Math.max(20, Math.abs(targetY - entryY));
+      const stopHeight = targetHeight * 0.5; // 1:2 R:R
+      const stopY = entryY - stopHeight;
+
+      return [
+        {
+          key: 'targetBox',
+          type: 'rect',
+          attrs: { x: left, y: entryY, width, height: targetHeight },
+          styles: { style: 'stroke_fill', color: 'rgba(14, 203, 129, 0.18)', borderColor: '#0ecb81', borderSize: 1.2 }
+        },
+        {
+          key: 'stopBox',
+          type: 'rect',
+          attrs: { x: left, y: stopY, width, height: stopHeight },
+          styles: { style: 'stroke_fill', color: 'rgba(246, 70, 93, 0.18)', borderColor: '#f6465d', borderSize: 1.2 }
+        },
+        {
+          key: 'entryLine',
+          type: 'line',
+          attrs: { coordinates: [{ x: left, y: entryY }, { x: left + width, y: entryY }] },
+          styles: { style: 'dashed', color: '#e8eaed', size: 1.2, dashedValue: [3, 3] }
+        },
+        {
+          key: 'targetText',
+          type: 'text',
+          attrs: { x: left + 6, y: entryY + targetHeight - 6, text: 'TARGET (2.0R)' },
+          styles: { color: '#0ecb81', size: 10, family: 'monospace', weight: 'bold' }
+        },
+        {
+          key: 'stopText',
+          type: 'text',
+          attrs: { x: left + 6, y: stopY + 14, text: 'STOP (1.0R)' },
+          styles: { color: '#f6465d', size: 10, family: 'monospace', weight: 'bold' }
+        }
+      ];
     }
   });
 
@@ -405,7 +520,8 @@ const DRAWING_LABELS = {
   horizontalStraightLine: 'Horizontal line', horizontalRayLine: 'Horizontal ray',
   horizontalSegment: 'Horizontal segment', verticalStraightLine: 'Vertical line',
   parallelStraightLine: 'Parallel lines', priceChannelLine: 'Price channel',
-  fibonacciLine: 'Fibonacci retracement', rectx: 'Rectangle', circlex: 'Circle'
+  fibonacciLine: 'Fibonacci retracement', rectx: 'Rectangle', circlex: 'Circle',
+  longPos: 'Long Position (R:R)', shortPos: 'Short Position (R:R)'
 };
 const userDrawings = new Map();
 const drawingListeners = new Set();

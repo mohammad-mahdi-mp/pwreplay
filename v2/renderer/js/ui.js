@@ -213,9 +213,9 @@ function openCsvModal () {
 }
 
 function loadSample () {
-  const candles = generateSampleCandles(3000);
-  addDataset(candles, 'SAMPLE', 'M15');
-  toast('3,000 sample bars generated', 'ok');
+  const candles = generateSampleCandles(3000, 65000);
+  addDataset(candles, 'BTC/USDT', 'M15');
+  toast('3,000 BTC/USDT M15 bars loaded', 'ok');
 }
 
 // ---------- مودال شروع ریپلی ----------
@@ -279,10 +279,20 @@ function setPlayIcon (playing) {
 
 function updateBarTime () {
   const el = document.getElementById('bar-time');
-  if (!state.loaded) { el.textContent = '—'; return; }
+  const countEl = document.getElementById('bar-count-label');
+  if (!state.loaded) {
+    if (el) el.textContent = '—';
+    if (countEl) countEl.textContent = '0 bars';
+    return;
+  }
   const idx = state.mode === 'replay' ? state.replayIndex : state.candles.length - 1;
   const c = state.candles[idx];
-  el.textContent = c ? formatTime(c.timestamp) : '—';
+  if (el) el.textContent = c ? formatTime(c.timestamp) : '—';
+  if (countEl) {
+    countEl.textContent = state.mode === 'replay'
+      ? `Bar ${idx + 1} / ${state.candles.length.toLocaleString('en-US')}`
+      : `${state.candles.length.toLocaleString('en-US')} bars`;
+  }
 }
 
 function toggleReplay () {

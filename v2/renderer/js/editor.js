@@ -152,6 +152,12 @@ function renderScriptList () {
 
 // ---------- راه‌اندازی ----------
 
+export function setPineScript (name, code) {
+  if (cm && code != null) cm.setValue(code);
+  const nameEl = document.getElementById('pine-name');
+  if (nameEl && name) nameEl.value = name;
+}
+
 export function initPineEditor () {
   definePineMode();
 

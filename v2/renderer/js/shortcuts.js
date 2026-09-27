@@ -1,7 +1,8 @@
 import { state, listDatasets, setActiveDataset } from './core/store.js';
-import { stepForward, stepBack, startPlay, stopPlay, isPlaying } from './core/replay.js';
+import { stepForward, stepBack, startPlay, stopPlay, isPlaying, jumpTo } from './core/replay.js';
 import * as engine from './trading/engine.js';
 import { setTool } from './chart.js';
+import * as sound from './core/sound.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -22,16 +23,18 @@ function currentSlTp () {
 }
 
 function marketBuy () {
-  if (state.mode !== 'replay') return;
+  if (state.mode !== 'replay') { showShortcutToast('Start replay to trade', 'err'); return; }
   const { sl, tp } = currentSlTp();
   const result = engine.marketOrder(1, currentVolume(), sl, tp);
+  if (result.ok) sound.playOrder();
   showShortcutToast(result.msg, result.ok ? 'ok' : 'err');
 }
 
 function marketSell () {
-  if (state.mode !== 'replay') return;
+  if (state.mode !== 'replay') { showShortcutToast('Start replay to trade', 'err'); return; }
   const { sl, tp } = currentSlTp();
   const result = engine.marketOrder(-1, currentVolume(), sl, tp);
+  if (result.ok) sound.playOrder();
   showShortcutToast(result.msg, result.ok ? 'ok' : 'err');
 }
 
@@ -54,19 +57,44 @@ function closeAllPositions () {
   showShortcutToast(`Closed ${positions.length} position(s)`, 'info');
 }
 
-let toastEl = null;
-let toastTimer = null;
+function breakEvenAll () {
+  if (state.mode !== 'replay') return;
+  const positions = engine.getPositions();
+  if (!positions.length) return;
+  let count = 0;
+  for (const pos of positions) {
+    const res = engine.modifyPosition(pos.id, { sl: pos.entryPrice });
+    if (res.ok) count++;
+  }
+  sound.playOrder();
+  showShortcutToast(`Moved ${count} position(s) to Break-Even`, 'ok');
+}
+
+function toggleFullscreen () {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  } else {
+    document.exitFullscreen().catch(() => {});
+  }
+}
+
+function toggleQuickTrade () {
+  const widget = $('quick-trading-widget');
+  const btn = $('btn-quick-trade-toggle');
+  if (!widget) return;
+  widget.classList.toggle('hidden');
+  if (btn) btn.classList.toggle('active', !widget.classList.contains('hidden'));
+}
+
 function showShortcutToast (msg, type) {
   if (typeof window.__mr2_toast === 'function') { window.__mr2_toast(msg, type); return; }
-  if (!toastEl) {
-    toastEl = document.createElement('div');
-    toastEl.className = 'shortcut-toast';
-    document.getElementById('toasts').appendChild(toastEl);
-  }
+  const container = document.getElementById('toasts');
+  if (!container) return;
+  const toastEl = document.createElement('div');
+  toastEl.className = 'toast ' + (type || 'info');
   toastEl.textContent = msg;
-  toastEl.className = 'shortcut-toast visible ' + (type || '');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { toastEl.classList.remove('visible'); }, 2200);
+  container.appendChild(toastEl);
+  setTimeout(() => toastEl.remove(), 2500);
 }
 
 export function initShortcuts () {
@@ -75,19 +103,29 @@ export function initShortcuts () {
 
     if (e.key === ' ' || e.code === 'Space') {
       e.preventDefault();
-      if (e.shiftKey) { stepBack(); }
-      else { togglePlay(); }
+      togglePlay();
       return;
     }
 
     if (e.key === 'ArrowRight' && !e.ctrlKey && !e.metaKey) {
       e.preventDefault();
-      stopPlay(); stepForward();
+      stopPlay();
+      if (e.shiftKey) {
+        for (let i = 0; i < 10; i++) stepForward();
+      } else {
+        stepForward();
+      }
       return;
     }
+
     if (e.key === 'ArrowLeft' && !e.ctrlKey && !e.metaKey) {
       e.preventDefault();
-      stopPlay(); stepBack();
+      stopPlay();
+      if (e.shiftKey) {
+        for (let i = 0; i < 10; i++) stepBack();
+      } else {
+        stepBack();
+      }
       return;
     }
 
@@ -97,10 +135,32 @@ export function initShortcuts () {
       marketBuy();
       return;
     }
+
     if (e.key === 's' || e.key === 'S') {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       e.preventDefault();
       marketSell();
+      return;
+    }
+
+    if (e.key === 'e' || e.key === 'E') {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      e.preventDefault();
+      breakEvenAll();
+      return;
+    }
+
+    if (e.key === 't' || e.key === 'T') {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      e.preventDefault();
+      toggleQuickTrade();
+      return;
+    }
+
+    if (e.key === 'f' || e.key === 'F') {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      e.preventDefault();
+      toggleFullscreen();
       return;
     }
 
@@ -132,14 +192,18 @@ export function initShortcuts () {
 
     if (e.key === '?') {
       e.preventDefault();
-      showShortcutToast('Space=play | ←→=step | B/S=buy/sell | X=close all | Ctrl+Z=undo | Alt+1-9=switch dataset', 'info');
+      const modal = document.getElementById('shortcuts-modal');
+      if (modal) modal.classList.remove('hidden');
       return;
     }
 
     if (e.key === 'Escape') {
-      if (engine.getPositions().length || document.activeElement !== document.body) {
-        setTool('none');
+      const modals = document.querySelectorAll('.modal:not(.hidden)');
+      if (modals.length) {
+        modals.forEach(m => m.classList.add('hidden'));
+        return;
       }
+      setTool('none');
       return;
     }
   });
