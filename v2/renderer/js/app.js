@@ -67,11 +67,6 @@ function applyPreferences (resizeChart = true) {
   document.body.classList.toggle('bottom-collapsed', !preferences.bottomPanel);
   document.body.classList.toggle('trade-pinned', preferences.tradePanel);
 
-  const qtb = $('quick-trading-widget');
-  if (qtb) qtb.classList.toggle('hidden', !preferences.quickTrade);
-  const qtbBtn = $('btn-quick-trade-toggle');
-  if (qtbBtn) qtbBtn.classList.toggle('active', preferences.quickTrade);
-
   sound.setMuted(!preferences.sound);
   const sndBtn = $('btn-sound');
   if (sndBtn) sndBtn.classList.toggle('active', preferences.sound);
@@ -168,14 +163,6 @@ function initWorkspacePreferences () {
 
   // Chart screenshot button
   $('btn-screenshot').addEventListener('click', saveScreenshot);
-
-  // 1-Click trade toggle
-  $('btn-quick-trade-toggle').addEventListener('click', () => {
-    preferences.quickTrade = !preferences.quickTrade;
-    $('quick-trading-widget').classList.toggle('hidden', !preferences.quickTrade);
-    $('btn-quick-trade-toggle').classList.toggle('active', preferences.quickTrade);
-    savePreferences();
-  });
 
   // Splitters
   initSplitter($('trade-resizer'), event => {
@@ -314,32 +301,6 @@ function renderAccount () {
 
   $('buy-quote').textContent = Number.isFinite(ask) ? fmt(ask, digits) : '—';
   $('sell-quote').textContent = Number.isFinite(bid) ? fmt(bid, digits) : '—';
-
-  // ویجت ترید فوری روی چارت
-  const qtbSell = $('qtb-sell-price');
-  const qtbBuy = $('qtb-buy-price');
-  if (qtbSell) qtbSell.textContent = Number.isFinite(bid) ? fmt(bid, digits) : '—';
-  if (qtbBuy) qtbBuy.textContent = Number.isFinite(ask) ? fmt(ask, digits) : '—';
-
-  // تیکر هدر با انیمیشن فلش
-  const tpEl = $('ticker-price');
-  const tcEl = $('ticker-change');
-  if (tpEl && Number.isFinite(price)) {
-    tpEl.textContent = fmt(price, digits);
-    if (lastPrice != null && lastPrice !== price) {
-      tpEl.style.color = price > lastPrice ? 'var(--green)' : 'var(--red)';
-      clearTimeout(priceFlashTimer);
-      priceFlashTimer = setTimeout(() => { tpEl.style.color = ''; }, 350);
-    }
-    lastPrice = price;
-  }
-  if (tcEl && state.candles.length) {
-    const base = state.candles[0].open;
-    const chg = price - base;
-    const pct = base ? (chg / base) * 100 : 0;
-    tcEl.textContent = `${chg >= 0 ? '+' : ''}${fmt(chg, digits)} (${fmt(pct, 2)}%)`;
-    tcEl.className = 'ticker-change ' + (chg >= 0 ? 'up' : 'down');
-  }
 
   // وضعیت دکمه‌های ریپلی
   const repToggle = $('btn-replay-toggle');
@@ -1121,65 +1082,6 @@ function initTradePanel () {
     toast(`Closed ${positions.length} position(s)`, 'info');
   });
 
-  // ویجت ترید فوری روی چارت (1-Click Trading Widget)
-  const qtbSell = $('qtb-sell');
-  const qtbBuy = $('qtb-buy');
-  const qtbVolInput = $('qtb-vol-input');
-  const qtbVolDown = $('qtb-vol-down');
-  const qtbVolUp = $('qtb-vol-up');
-  const qtbBe = $('qtb-be');
-  const qtbClose = $('qtb-close');
-
-  if (qtbSell) {
-    qtbSell.addEventListener('click', () => {
-      if (state.mode !== 'replay') { toast('Start replay to trade', 'err'); return; }
-      const vol = Number(qtbVolInput.value) || 1;
-      const res = engine.marketOrder(-1, vol);
-      if (res.ok) sound.playOrder();
-      toast(res.msg, res.ok ? 'ok' : 'err');
-    });
-  }
-
-  if (qtbBuy) {
-    qtbBuy.addEventListener('click', () => {
-      if (state.mode !== 'replay') { toast('Start replay to trade', 'err'); return; }
-      const vol = Number(qtbVolInput.value) || 1;
-      const res = engine.marketOrder(1, vol);
-      if (res.ok) sound.playOrder();
-      toast(res.msg, res.ok ? 'ok' : 'err');
-    });
-  }
-
-  if (qtbVolDown && qtbVolInput) {
-    qtbVolDown.addEventListener('click', () => {
-      let v = Math.max(0.01, (Number(qtbVolInput.value) || 1) - 0.1);
-      qtbVolInput.value = v.toFixed(2);
-      $('order-volume').value = qtbVolInput.value;
-    });
-  }
-
-  if (qtbVolUp && qtbVolInput) {
-    qtbVolUp.addEventListener('click', () => {
-      let v = (Number(qtbVolInput.value) || 1) + 0.1;
-      qtbVolInput.value = v.toFixed(2);
-      $('order-volume').value = qtbVolInput.value;
-    });
-  }
-
-  if (qtbVolInput) {
-    qtbVolInput.addEventListener('change', () => {
-      $('order-volume').value = qtbVolInput.value;
-      saveOrderState();
-    });
-  }
-
-  if (qtbBe) {
-    qtbBe.addEventListener('click', () => $('btn-be-all').click());
-  }
-  if (qtbClose) {
-    qtbClose.addEventListener('click', () => $('btn-close-all').click());
-  }
-
   // Position click handler from chart
   chartApi.onPositionClick((positionId) => selectPositionInPanel(positionId));
 
@@ -1351,15 +1253,16 @@ function initDatasetSwitcher () {
     if (state.mode === 'replay') { toast('Exit replay before switching dataset', 'err'); e.target.value = `${state.symbol}|${state.timeframe}`; return; }
     setActiveDataset(sym, tf);
     rawBaseCandles = [...state.candles];
-    updateActiveTfPill(tf);
+    syncTfSelect(tf);
     toast(`Switched to ${sym} · ${tf}`, 'ok');
   });
 
-  // پیاده‌سازی کلیک روی تایم‌فریم‌ها
-  document.querySelectorAll('#tf-pills .tf-pill').forEach(pill => {
-    pill.addEventListener('click', () => {
+  // انتخاب تایم‌فریم و بازنمونه‌گیری (Resampling)
+  const tfSelect = $('tf-select');
+  if (tfSelect) {
+    tfSelect.addEventListener('change', () => {
       if (!state.loaded || !rawBaseCandles.length) { toast('Load market data first', 'err'); return; }
-      const targetTf = pill.dataset.tf;
+      const targetTf = tfSelect.value;
       if (targetTf === state.timeframe) return;
 
       const currentTs = (state.mode === 'replay' && state.replayIndex >= 0 && state.candles[state.replayIndex])
@@ -1369,12 +1272,12 @@ function initDatasetSwitcher () {
       const resampled = resampleCandles(rawBaseCandles, targetTf);
       if (!resampled || resampled.length < 2) {
         toast('Cannot resample to ' + targetTf, 'err');
+        tfSelect.value = state.timeframe;
         return;
       }
 
       state.candles = resampled;
       state.timeframe = targetTf;
-      updateActiveTfPill(targetTf);
 
       if (state.mode === 'replay' && currentTs != null) {
         let newIdx = state.candles.findIndex(c => c.timestamp >= currentTs);
@@ -1389,13 +1292,12 @@ function initDatasetSwitcher () {
       renderAll();
       toast(`Timeframe switched to ${targetTf} (${resampled.length} bars)`, 'info');
     });
-  });
+  }
 }
 
-function updateActiveTfPill (tf) {
-  document.querySelectorAll('#tf-pills .tf-pill').forEach(pill => {
-    pill.classList.toggle('active', pill.dataset.tf === tf);
-  });
+function syncTfSelect (tf) {
+  const el = $('tf-select');
+  if (el) el.value = tf;
 }
 
 // ---------- Go-To: پرش به تاریخ ----------
@@ -1536,7 +1438,7 @@ function initSubscriptions () {
     $('bar-count-label').textContent = state.candles.length.toLocaleString('en-US') + ' bars';
     syncGotoRange();
     refreshDatasetSelect();
-    updateActiveTfPill(state.timeframe);
+    syncTfSelect(state.timeframe);
     renderAll();
   });
 

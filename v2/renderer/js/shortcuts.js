@@ -78,12 +78,9 @@ function toggleFullscreen () {
   }
 }
 
-function toggleQuickTrade () {
-  const widget = $('quick-trading-widget');
-  const btn = $('btn-quick-trade-toggle');
-  if (!widget) return;
-  widget.classList.toggle('hidden');
-  if (btn) btn.classList.toggle('active', !widget.classList.contains('hidden'));
+function toggleTradePanel () {
+  const btn = $('btn-toggle-trade');
+  if (btn) btn.click();
 }
 
 function showShortcutToast (msg, type) {
@@ -153,7 +150,7 @@ export function initShortcuts () {
     if (e.key === 't' || e.key === 'T') {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       e.preventDefault();
-      toggleQuickTrade();
+      toggleTradePanel();
       return;
     }
 
