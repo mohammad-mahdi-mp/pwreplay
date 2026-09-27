@@ -36,6 +36,7 @@ let rawBaseCandles = [];
 let lastPrice = null;
 let priceFlashTimer = null;
 let activeTradeFilter = 'all'; // 'all' | 'wins' | 'losses'
+let calendarDayFilter = null;
 
 function loadPreferences () {
   try {
@@ -319,9 +320,60 @@ function renderAccount () {
     statPill.classList.toggle('replay-active', isReplay);
     statText.textContent = isReplay ? 'REPLAY' : 'VIEW';
   }
+
+  updatePlannedMetrics();
 }
 
 // ---------- تیکت سفارش و پنل معامله ----------
+
+function updatePlannedMetrics () {
+  const planRiskEl = $('plan-risk');
+  const planRewardEl = $('plan-reward');
+  const planRrEl = $('plan-rr');
+  if (!planRiskEl || !planRewardEl || !planRrEl) return;
+
+  const type = $('order-type') ? $('order-type').value : 'market';
+  const customPrice = $('order-price') ? Number($('order-price').value) : NaN;
+  const currentPrice = markPrice();
+  const entryPrice = (type !== 'market' && Number.isFinite(customPrice) && customPrice > 0) ? customPrice : currentPrice;
+
+  const vol = Number($('order-volume').value) || 0;
+  const slRaw = $('order-sl').value.trim();
+  const tpRaw = $('order-tp').value.trim();
+  const sl = slRaw !== '' ? Number(slRaw) : NaN;
+  const tp = tpRaw !== '' ? Number(tpRaw) : NaN;
+
+  const contractSize = engine.getConfig().contractSize || 1;
+  const balance = engine.account().balance || 10000;
+
+  let riskUsd = null;
+  let rewardUsd = null;
+
+  if (Number.isFinite(entryPrice) && Number.isFinite(sl) && vol > 0) {
+    const slDist = Math.abs(entryPrice - sl);
+    riskUsd = slDist * vol * contractSize;
+    const riskPct = balance > 0 ? (riskUsd / balance) * 100 : 0;
+    planRiskEl.textContent = `-$${fmt(riskUsd, 2)} (${fmt(riskPct, 1)}%)`;
+  } else {
+    planRiskEl.textContent = '—';
+  }
+
+  if (Number.isFinite(entryPrice) && Number.isFinite(tp) && vol > 0) {
+    const tpDist = Math.abs(entryPrice - tp);
+    rewardUsd = tpDist * vol * contractSize;
+    const rewardPct = balance > 0 ? (rewardUsd / balance) * 100 : 0;
+    planRewardEl.textContent = `+$${fmt(rewardUsd, 2)} (${fmt(rewardPct, 1)}%)`;
+  } else {
+    planRewardEl.textContent = '—';
+  }
+
+  if (riskUsd != null && rewardUsd != null && riskUsd > 0) {
+    const rr = rewardUsd / riskUsd;
+    planRrEl.textContent = `1 : ${fmt(rr, 2)}`;
+  } else {
+    planRrEl.textContent = '—';
+  }
+}
 
 function readTicket () {
   const sl = $('order-sl').value.trim();
@@ -347,12 +399,12 @@ function submitTicket (dir) {
   toast(result.msg, result.ok ? 'ok' : 'err');
 }
 
-function sizeByRisk () {
+function sizeByRisk (quiet = false) {
   const price = markPrice();
   const slRaw = $('order-sl').value.trim();
   const riskPct = Number($('risk-pct').value) || 1;
-  if (!Number.isFinite(price)) { toast('No market price available', 'err'); return; }
-  if (!slRaw) { toast('Enter a Stop Loss price first to calculate volume', 'err'); return; }
+  if (!Number.isFinite(price)) { if (!quiet) toast('No market price available', 'err'); return; }
+  if (!slRaw) { if (!quiet) toast('Enter a Stop Loss price first to calculate volume', 'err'); return; }
   const volume = risk.volumeByRisk({
     balance: engine.account().balance,
     riskPct,
@@ -360,11 +412,10 @@ function sizeByRisk () {
     slPrice: Number(slRaw),
     contractSize: engine.getConfig().contractSize
   });
-  if (!Number.isFinite(volume) || volume <= 0) { toast('Invalid volume computed — check Stop Loss', 'err'); return; }
+  if (!Number.isFinite(volume) || volume <= 0) { if (!quiet) toast('Invalid volume computed — check Stop Loss', 'err'); return; }
   $('order-volume').value = volume.toFixed(4);
-  const qtbVol = $('qtb-vol-input');
-  if (qtbVol) qtbVol.value = volume.toFixed(2);
-  toast(`Volume sized: ${fmt(volume, 4)} lots (${riskPct}% risk)`, 'ok');
+  updatePlannedMetrics();
+  if (!quiet) toast(`Volume sized: ${fmt(volume, 4)} lots (${riskPct}% risk)`, 'ok');
 }
 
 function calculateTargetByRr (rrMultiple) {
@@ -377,6 +428,7 @@ function calculateTargetByRr (rrMultiple) {
   const dir = sl < price ? 1 : -1; // اگر استاپ زیر قیمت است، خرید است
   const tp = dir > 0 ? price + dist * rrMultiple : price - dist * rrMultiple;
   $('order-tp').value = tp.toFixed(priceDigits(price));
+  updatePlannedMetrics();
   toast(`Take profit set to 1:${rrMultiple} R:R (@ ${fmt(tp, priceDigits(price))})`, 'ok');
 }
 
@@ -588,6 +640,14 @@ function renderHistory () {
   if (activeTradeFilter === 'wins') filtered = filtered.filter(t => t.netPnl > 0);
   else if (activeTradeFilter === 'losses') filtered = filtered.filter(t => t.netPnl <= 0);
 
+  if (calendarDayFilter) {
+    filtered = filtered.filter(t => {
+      const d = new Date(t.closeTime);
+      const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      return k === calendarDayFilter;
+    });
+  }
+
   const reversed = [...filtered].reverse();
   let wins = 0;
 
@@ -725,7 +785,10 @@ function renderStats () {
 
 // ---------- رسم نمودار اکوئیتی مدرن (Canvas) ----------
 
-function drawEquity (points, initialBalance = 10000) {
+let lastEquityState = null;
+
+function drawEquity (points, initialBalance = 10000, hoverIndex = null) {
+  lastEquityState = { points, initialBalance };
   const canvas = $('equity-canvas');
   if (!canvas) return;
   const context = canvas.getContext('2d');
@@ -807,6 +870,92 @@ function drawEquity (points, initialBalance = 10000) {
   context.fillStyle = strokeColor;
   context.font = 'bold 10px monospace';
   context.fillText(`$${fmt(lastVal, 0)}`, endX + 6, endY + 3);
+
+  // هاور تعاملی و کراس‌هیر (Interactive Inspect)
+  if (hoverIndex != null && hoverIndex >= 0 && hoverIndex < points.length) {
+    const hx = x(hoverIndex);
+    const hy = y(points[hoverIndex]);
+    const val = points[hoverIndex];
+    const prevVal = hoverIndex > 0 ? points[hoverIndex - 1] : initialBalance;
+    const delta = val - prevVal;
+    const gainPct = initialBalance > 0 ? ((val - initialBalance) / initialBalance) * 100 : 0;
+
+    context.strokeStyle = 'rgba(232, 179, 57, 0.5)';
+    context.lineWidth = 1;
+    context.setLineDash([3, 3]);
+    context.beginPath();
+    context.moveTo(hx, padTop);
+    context.lineTo(hx, height - padBottom);
+    context.stroke();
+    context.setLineDash([]);
+
+    context.fillStyle = '#e8b339';
+    context.beginPath();
+    context.arc(hx, hy, 4.5, 0, Math.PI * 2);
+    context.fill();
+    context.strokeStyle = '#181c26';
+    context.lineWidth = 1.5;
+    context.stroke();
+
+    const line1 = hoverIndex === 0 ? 'Starting balance' : `Trade #${hoverIndex}: ${(delta >= 0 ? '+' : '')}$${fmt(delta, 2)}`;
+    const line2 = `Equity: $${fmt(val, 2)} (${gainPct >= 0 ? '+' : ''}${fmt(gainPct, 2)}%)`;
+
+    context.font = 'bold 9.5px monospace';
+    const w1 = context.measureText(line1).width;
+    context.font = '9px monospace';
+    const w2 = context.measureText(line2).width;
+    const boxW = Math.max(w1, w2) + 16;
+    const boxH = 34;
+
+    let boxX = hx - boxW / 2;
+    if (boxX < padLeft) boxX = padLeft;
+    if (boxX + boxW > width - 8) boxX = width - 8 - boxW;
+
+    let boxY = hy - boxH - 8;
+    if (boxY < 4) boxY = hy + 8;
+
+    context.fillStyle = 'rgba(20, 24, 35, 0.94)';
+    context.strokeStyle = 'rgba(232, 179, 57, 0.45)';
+    context.lineWidth = 1;
+    context.beginPath();
+    if (typeof context.roundRect === 'function') {
+      context.roundRect(boxX, boxY, boxW, boxH, 4);
+    } else {
+      context.rect(boxX, boxY, boxW, boxH);
+    }
+    context.fill();
+    context.stroke();
+
+    context.fillStyle = delta >= 0 ? '#0ecb81' : '#f6465d';
+    context.font = 'bold 9.5px monospace';
+    context.textAlign = 'left';
+    context.fillText(line1, boxX + 8, boxY + 14);
+
+    context.fillStyle = '#c5cdd9';
+    context.font = '9px monospace';
+    context.fillText(line2, boxX + 8, boxY + 27);
+  }
+}
+
+function initEquityCanvasHover () {
+  const canvas = $('equity-canvas');
+  if (!canvas) return;
+
+  canvas.addEventListener('mousemove', (e) => {
+    if (!lastEquityState || !lastEquityState.points || lastEquityState.points.length < 2) return;
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const padLeft = 14, padRight = 50;
+    const usableW = (canvas.clientWidth || 600) - padLeft - padRight;
+    const ratio = Math.max(0, Math.min(1, (mouseX - padLeft) / usableW));
+    const idx = Math.round(ratio * (lastEquityState.points.length - 1));
+    drawEquity(lastEquityState.points, lastEquityState.initialBalance, idx);
+  });
+
+  canvas.addEventListener('mouseleave', () => {
+    if (!lastEquityState || !lastEquityState.points) return;
+    drawEquity(lastEquityState.points, lastEquityState.initialBalance, null);
+  });
 }
 
 // ---------- تقویم عملکرد ----------
@@ -861,7 +1010,10 @@ function renderCalendar () {
     const key = `${calView.year}-${String(calView.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const cell = document.createElement('div');
     const pnl = daily[key];
+    const isSelected = calendarDayFilter === key;
     cell.className = 'cal-cell' + (pnl == null ? '' : pnl > 0 ? ' win' : pnl < 0 ? ' loss' : ' flat')
+      + (pnl != null ? ' has-trades' : '')
+      + (isSelected ? ' active-filter' : '')
       + (today.getFullYear() === calView.year && today.getMonth() + 1 === calView.month && today.getDate() === day ? ' today' : '');
     const dEl = document.createElement('span');
     dEl.className = 'cal-day';
@@ -872,7 +1024,19 @@ function renderCalendar () {
       p.className = 'cal-pnl';
       p.textContent = (pnl >= 0 ? '+' : '') + fmt(pnl, 0);
       cell.appendChild(p);
-      cell.title = `${key}: ${(pnl >= 0 ? '+' : '')}${fmt(pnl, 2)}`;
+      cell.title = `${key}: ${(pnl >= 0 ? '+' : '')}${fmt(pnl, 2)} (Click to filter table)`;
+
+      cell.addEventListener('click', () => {
+        if (calendarDayFilter === key) {
+          calendarDayFilter = null;
+          toast('Cleared calendar date filter', 'info');
+        } else {
+          calendarDayFilter = key;
+          toast(`Filtered trades for ${key}`, 'ok');
+        }
+        renderCalendar();
+        renderHistory();
+      });
     }
     body.appendChild(cell);
   }
@@ -909,6 +1073,22 @@ function renderJournal () {
     head.className = 'journal-head';
     head.innerHTML = `<b>${trade.id}</b> · ${trade.dir > 0 ? 'LONG' : 'SHORT'} ${fmt(trade.volume, 4)} · Entry ${fmt(trade.entryPrice, priceDigits(trade.entryPrice))} → Exit ${fmt(trade.exitPrice, priceDigits(trade.exitPrice))} · P&L <b style="color:${trade.netPnl >= 0 ? 'var(--green)' : 'var(--red)'}">${(trade.netPnl >= 0 ? '+' : '') + fmt(trade.netPnl, 2)}</b> · ${trade.reason}`;
 
+    const tagList = Array.isArray(entry.tags) ? entry.tags : (entry.tags || '').split(',').map(s => s.trim()).filter(Boolean);
+    const tagBadges = document.createElement('div');
+    tagBadges.style.display = 'flex';
+    tagBadges.style.flexWrap = 'wrap';
+    tagBadges.style.gap = '4px';
+    tagBadges.style.margin = '4px 0 6px';
+    tagList.forEach(t => {
+      const b = document.createElement('span');
+      b.className = 'trp-chip selected';
+      b.style.fontSize = '9px';
+      b.style.padding = '1px 6px';
+      b.style.cursor = 'default';
+      b.textContent = t;
+      tagBadges.appendChild(b);
+    });
+
     const textarea = document.createElement('textarea');
     textarea.className = 'journal-note';
     textarea.placeholder = 'Write trade reflections, setup reasons or mistakes...';
@@ -919,7 +1099,7 @@ function renderJournal () {
     const tagInput = document.createElement('input');
     tagInput.type = 'text';
     tagInput.placeholder = 'Tags (comma separated, e.g. Breakout, Trend, FOMO)';
-    tagInput.value = (entry.tags || []).join(', ');
+    tagInput.value = tagList.join(', ');
 
     const saveBtn = document.createElement('button');
     saveBtn.className = 'btn small primary';
@@ -933,6 +1113,7 @@ function renderJournal () {
       savedMsg.textContent = 'Saved ✓';
       setTimeout(() => { savedMsg.textContent = ''; }, 2000);
       toast(`Saved notes for ${trade.id}`, 'ok');
+      renderJournal();
     });
 
     const shotBtn = document.createElement('button');
@@ -950,7 +1131,11 @@ function renderJournal () {
     });
 
     row.append(tagInput, saveBtn, shotBtn, savedMsg);
-    card.append(head, textarea, row);
+    if (tagList.length) {
+      card.append(head, tagBadges, textarea, row);
+    } else {
+      card.append(head, textarea, row);
+    }
     container.appendChild(card);
   }
 }
@@ -960,6 +1145,93 @@ async function saveScreenshot () {
   const res = await journal.saveChartScreenshot(name, $('chart-container'));
   if (res.ok) toast(`Chart captured: ${res.path}`, 'ok');
   else if (res.error !== 'Cancelled') toast(`Capture failed: ${res.error}`, 'err');
+}
+
+// ---------- مرور سریع و برچسب‌گذاری بعد از بسته شدن معامله ----------
+
+let activeReviewTrade = null;
+let reviewDismissTimer = null;
+
+function showTradeReviewPopup (trade) {
+  if (!trade) return;
+  activeReviewTrade = trade;
+  const popup = $('trade-review-popup');
+  if (!popup) return;
+
+  const isWin = trade.netPnl >= 0;
+  const dirStr = trade.dir > 0 ? 'LONG' : 'SHORT';
+  const pnlStr = (isWin ? '+' : '') + '$' + fmt(trade.netPnl, 2);
+
+  $('trp-title').textContent = `${dirStr} Closed`;
+  $('trp-sub').textContent = trade.id;
+  const badge = $('trp-badge');
+  badge.textContent = dirStr;
+  badge.className = 'dir-badge ' + (trade.dir > 0 ? 'pos' : 'neg');
+
+  const pnlEl = $('trp-pnl');
+  pnlEl.textContent = pnlStr;
+  pnlEl.className = isWin ? 'pos' : 'neg';
+
+  const detailEl = $('trp-detail');
+  detailEl.textContent = `${fmt(trade.volume, 3)} lots · ${trade.reason}`;
+
+  document.querySelectorAll('.trp-chip').forEach(c => c.classList.remove('selected'));
+  $('trp-note').value = '';
+
+  popup.classList.remove('hidden');
+
+  clearTimeout(reviewDismissTimer);
+  reviewDismissTimer = setTimeout(() => {
+    popup.classList.add('hidden');
+  }, 16000);
+}
+
+function initTradeReviewPopup () {
+  const popup = $('trade-review-popup');
+  if (!popup) return;
+
+  $('btn-close-trp').addEventListener('click', () => {
+    popup.classList.add('hidden');
+    clearTimeout(reviewDismissTimer);
+  });
+
+  document.querySelectorAll('.trp-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      chip.classList.toggle('selected');
+      clearTimeout(reviewDismissTimer);
+    });
+  });
+
+  const saveReflection = () => {
+    if (!activeReviewTrade) return;
+    const selectedTags = Array.from(document.querySelectorAll('.trp-chip.selected')).map(c => c.dataset.tag);
+    const noteText = $('trp-note').value.trim();
+    if (!selectedTags.length && !noteText) {
+      popup.classList.add('hidden');
+      return;
+    }
+    const sessionId = engine.getSessionId() || 'default';
+    journal.saveEntry(sessionId, activeReviewTrade.id, {
+      tags: selectedTags,
+      note: noteText,
+      notes: noteText
+    });
+    toast(`Reflections saved for ${activeReviewTrade.id}`, 'ok');
+    popup.classList.add('hidden');
+    renderJournal();
+  };
+
+  $('btn-trp-save').addEventListener('click', saveReflection);
+  $('trp-note').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveReflection();
+    }
+  });
+
+  on('trade-closed', (trade) => {
+    showTradeReviewPopup(trade);
+  });
 }
 
 // ---------- تنظیمات شبیه‌سازی معامله ----------
@@ -1047,11 +1319,22 @@ function initTradePanel () {
   $('btn-calc-volume').addEventListener('click', sizeByRisk);
   $('btn-sim-apply').addEventListener('click', applySimSettings);
 
+  ['order-volume', 'order-price', 'order-sl', 'order-tp', 'risk-pct'].forEach(id => {
+    const el = $(id);
+    if (el) el.addEventListener('input', updatePlannedMetrics);
+  });
+
   // چیپ‌های ریسک سریع
   document.querySelectorAll('.risk-chip').forEach(chip => {
     chip.addEventListener('click', () => {
       $('risk-pct').value = chip.dataset.risk;
-      sizeByRisk();
+      const slRaw = $('order-sl').value.trim();
+      if (slRaw) {
+        sizeByRisk();
+      } else {
+        updatePlannedMetrics();
+        toast(`Risk set to ${chip.dataset.risk}% (set SL to auto-calculate volume)`, 'info');
+      }
     });
   });
 
@@ -1515,6 +1798,8 @@ initDatasetSwitcher();
 initContextMenu();
 initGoTo();
 initShortcuts();
+initEquityCanvasHover();
+initTradeReviewPopup();
 initSubscriptions();
 renderAll();
 

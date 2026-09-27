@@ -15,20 +15,41 @@ function saveAll (map) {
 }
 
 export function getEntry (sessionId, tradeId) {
+  if (!tradeId) { tradeId = sessionId; sessionId = 'default'; }
   const all = loadAll();
-  return (all[sessionId] && all[sessionId][tradeId]) || { note: '', tags: '', emotion: '' };
+  const item = (all[sessionId] && all[sessionId][tradeId]) || { note: '', notes: '', tags: [], emotion: '' };
+  if (!item.notes && item.note) item.notes = item.note;
+  if (!item.note && item.notes) item.note = item.notes;
+  if (typeof item.tags === 'string') item.tags = item.tags.split(',').map(s => s.trim()).filter(Boolean);
+  return item;
+}
+
+export function getJournalEntry (tradeId, sessionId = 'default') {
+  return getEntry(sessionId, tradeId);
 }
 
 export function saveEntry (sessionId, tradeId, patch) {
+  if (typeof tradeId === 'object' && patch === undefined) {
+    patch = tradeId;
+    tradeId = sessionId;
+    sessionId = 'default';
+  }
   const all = loadAll();
   if (!all[sessionId]) all[sessionId] = {};
-  const prev = all[sessionId][tradeId] || { note: '', tags: '', emotion: '' };
-  all[sessionId][tradeId] = { ...prev, ...patch };
+  const prev = all[sessionId][tradeId] || { note: '', notes: '', tags: [], emotion: '' };
+  const updated = { ...prev, ...patch };
+  if (updated.notes && !updated.note) updated.note = updated.notes;
+  if (updated.note && !updated.notes) updated.notes = updated.note;
+  all[sessionId][tradeId] = updated;
   saveAll(all);
-  return all[sessionId][tradeId];
+  return updated;
 }
 
-export function listSessionEntries (sessionId) {
+export function saveJournalEntry (tradeId, patch, sessionId = 'default') {
+  return saveEntry(sessionId, tradeId, patch);
+}
+
+export function listSessionEntries (sessionId = 'default') {
   const all = loadAll();
   return all[sessionId] || {};
 }

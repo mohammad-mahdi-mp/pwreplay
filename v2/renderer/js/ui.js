@@ -1,7 +1,7 @@
 // سیم‌کشی رابط کاربری v2: مودال‌ها، تب‌ها، جریان CSV، کنترل‌های ریپلی، اسکرابر، تب اندیکاتورها
 // رندر معاملات/مارجین در app.js انجام می‌شود؛ این فایل فقط نمایش و کنترل سطح بالاست
 
-import { state, on, addDataset, formatTime } from './core/store.js';
+import { state, on, addDataset, formatTime, fmt, priceDigits } from './core/store.js';
 import * as chartApi from './chart.js';
 import { parseCsv } from './core/csv.js';
 import { generateSampleCandles } from './core/sample.js';
@@ -220,22 +220,75 @@ function loadSample () {
 
 // ---------- مودال شروع ریپلی ----------
 
+function toDatetimeLocal (ts) {
+  const d = new Date(ts);
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+function formatRichTime (ts) {
+  const d = new Date(ts);
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const p = n => String(n).padStart(2, '0');
+  return `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()} · ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+function findNearestCandleIndex (targetTs) {
+  if (!state.candles || !state.candles.length) return 0;
+  let low = 0, high = state.candles.length - 1;
+  while (low <= high) {
+    const mid = (low + high) >> 1;
+    if (state.candles[mid].timestamp < targetTs) low = mid + 1;
+    else high = mid - 1;
+  }
+  if (low >= state.candles.length) return state.candles.length - 1;
+  if (low === 0) return 0;
+  const prevDiff = Math.abs(state.candles[low - 1].timestamp - targetTs);
+  const curDiff = Math.abs(state.candles[low].timestamp - targetTs);
+  return prevDiff < curDiff ? low - 1 : low;
+}
+
 function syncReplayInputs (v) {
-  document.getElementById('replay-start-num').value = v;
-  document.getElementById('replay-start-range').value = v;
-  const info = document.getElementById('replay-start-info');
-  if (state.candles[v]) {
-    info.textContent = `Bar ${v} of ${state.candles.length} · ${formatTime(state.candles[v].timestamp)}`;
+  const numInput = document.getElementById('replay-start-num');
+  const rangeInput = document.getElementById('replay-start-range');
+  if (numInput) numInput.value = v;
+  if (rangeInput) rangeInput.value = v;
+
+  const c = state.candles[v];
+  if (c) {
+    const dtInput = document.getElementById('replay-start-datetime');
+    if (dtInput) dtInput.value = toDatetimeLocal(c.timestamp);
+    const ricBar = document.getElementById('ric-bar-num');
+    if (ricBar) ricBar.textContent = `#${v} of ${state.candles.length.toLocaleString()}`;
+    const ricTime = document.getElementById('ric-time');
+    if (ricTime) ricTime.textContent = formatRichTime(c.timestamp);
+    const ricPrice = document.getElementById('ric-price');
+    if (ricPrice) ricPrice.textContent = `$${fmt(c.close, priceDigits(c.close))}`;
+    const ricRemaining = document.getElementById('ric-remaining');
+    if (ricRemaining) ricRemaining.textContent = `${(state.candles.length - v - 1).toLocaleString()} bars ahead`;
   }
 }
 
 function openReplayModal () {
-  const max = Math.max(10, state.candles.length - 2);
-  document.getElementById('replay-start-range').max = max;
+  const total = state.candles.length;
+  const max = Math.max(10, total - 2);
+  const rangeInput = document.getElementById('replay-start-range');
   const numInput = document.getElementById('replay-start-num');
+  rangeInput.max = max;
   numInput.max = max;
-  const current = Math.min(100, max);
   numInput.min = 10;
+
+  const totEl = document.getElementById('replay-total-bars');
+  if (totEl) totEl.textContent = total.toLocaleString();
+
+  const dtInput = document.getElementById('replay-start-datetime');
+  if (dtInput && total) {
+    dtInput.min = toDatetimeLocal(state.candles[0].timestamp);
+    dtInput.max = toDatetimeLocal(state.candles[total - 1].timestamp);
+  }
+
+  const current = Math.min(100, max);
   syncReplayInputs(current);
   openModal('replay-modal');
 }
@@ -436,6 +489,30 @@ export function initUi () {
     document.getElementById('replay-start-num').value = e.target.value;
     syncReplayInputs(+e.target.value);
   });
+
+  const repDt = document.getElementById('replay-start-datetime');
+  if (repDt) {
+    repDt.addEventListener('change', (e) => {
+      const ts = new Date(e.target.value).getTime();
+      if (!Number.isFinite(ts)) return;
+      const nearestIdx = findNearestCandleIndex(ts);
+      syncReplayInputs(nearestIdx);
+    });
+  }
+
+  const setPreset = (pct) => {
+    if (!state.candles.length) return;
+    const target = Math.max(10, Math.min(state.candles.length - 2, Math.floor(state.candles.length * pct)));
+    syncReplayInputs(target);
+  };
+  const b10 = document.getElementById('btn-rep-preset-10');
+  const b25 = document.getElementById('btn-rep-preset-25');
+  const b50 = document.getElementById('btn-rep-preset-50');
+  const b75 = document.getElementById('btn-rep-preset-75');
+  if (b10) b10.addEventListener('click', () => setPreset(0.1));
+  if (b25) b25.addEventListener('click', () => setPreset(0.25));
+  if (b50) b50.addEventListener('click', () => setPreset(0.5));
+  if (b75) b75.addEventListener('click', () => setPreset(0.75));
 
   // کنترل‌های پخش
   document.getElementById('btn-jump-start').addEventListener('click', jumpStart);

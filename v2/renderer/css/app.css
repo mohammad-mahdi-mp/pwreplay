@@ -612,6 +612,195 @@ kbd { display: inline-block; padding: 1px 5px; font: 10px/1.5 var(--mono); backg
 @keyframes modal-in { from { opacity: 0; transform: scale(.97) translateY(4px); } to { opacity: 1; transform: none; } }
 .modal:not(.hidden) .modal-box { animation: modal-in .15s ease; }
 
+/* متریک‌های برنامه‌ریزی ریسک به ریوارد در اردر دسک */
+.planned-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px 8px;
+  margin: 6px 0 8px;
+}
+.pm-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: center;
+}
+.pm-lbl {
+  font-size: 8.5px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text-muted);
+}
+.pm-col b {
+  font: 700 10.5px var(--mono);
+  color: var(--text);
+}
+.pm-col b.pos { color: var(--green); }
+.pm-col b.neg { color: var(--red); }
+
+/* پیش‌تنظیم‌ها و کارت اطلاعات ریپلی */
+.replay-presets {
+  margin: 8px 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.replay-presets .chip-label {
+  font-size: 9px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.replay-info-card {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 9px 11px;
+  margin-top: 10px;
+}
+.ric-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ric-lbl {
+  font-size: 8.5px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text-muted);
+}
+.ric-item b {
+  font: 10.5px var(--mono);
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* کارت مرور سریع ترید بعد از بسته شدن (FX Replay / TradeZella Style) */
+.trade-review-popup {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 330px;
+  background: var(--surface);
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+  z-index: 1000;
+  overflow: hidden;
+  animation: slideUp .2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.trade-review-popup.hidden {
+  display: none !important;
+}
+.trp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+.trp-head strong {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.trp-head small {
+  color: var(--text-muted);
+  font-size: 9px;
+  margin-left: 6px;
+}
+.trp-body {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.trp-result-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+}
+.trp-result-row b {
+  font-size: 13px;
+}
+.trp-tags-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.trp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.trp-chip {
+  padding: 2px 7px;
+  border-radius: 2px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-size: 9.5px;
+  cursor: pointer;
+  transition: all .12s;
+}
+.trp-chip:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+.trp-chip.selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #111;
+  font-weight: 700;
+}
+.trp-input-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+.trp-input-row input {
+  flex: 1;
+  height: 26px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0 7px;
+  font-size: 10px;
+  border-radius: 2px;
+}
+.trp-input-row input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+.cal-cell.has-trades {
+  cursor: pointer;
+}
+.cal-cell.has-trades:hover {
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.cal-cell.active-filter {
+  box-shadow: 0 0 0 2px var(--accent) !important;
+}
+
 /* اسکرول‌بار */
 ::-webkit-scrollbar { width: 7px; height: 7px; }
 ::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 2px; }

@@ -98,7 +98,7 @@ export function initShortcuts () {
   document.addEventListener('keydown', (e) => {
     if (isEditable(e.target)) return;
 
-    if (e.key === ' ' || e.code === 'Space') {
+    if (e.key === ' ' || e.code === 'Space' || (e.shiftKey && e.key === 'ArrowDown')) {
       e.preventDefault();
       togglePlay();
       return;
