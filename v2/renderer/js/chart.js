@@ -4,80 +4,80 @@ const K = window.klinecharts;
 
 export const darkStyles = {
   grid: {
-    horizontal: { show: true, size: 1, color: '#1e2230', style: 'dashed', dashedValue: [4, 4] },
-    vertical: { show: true, size: 1, color: '#1e2230', style: 'dashed', dashedValue: [4, 4] }
+    horizontal: { show: true, size: 1, color: '#171c24', style: 'dashed', dashedValue: [3, 5] },
+    vertical: { show: true, size: 1, color: '#171c24', style: 'dashed', dashedValue: [3, 5] }
   },
   candle: {
     type: 'candle_solid',
     bar: {
-      upColor: '#26a69a', downColor: '#ef5350', noChangeColor: '#888888',
-      upBorderColor: '#26a69a', downBorderColor: '#ef5350', noChangeBorderColor: '#888888',
-      upWickColor: '#26a69a', downWickColor: '#ef5350', noChangeWickColor: '#888888'
+      upColor: '#0ecb81', downColor: '#f6465d', noChangeColor: '#848e9c',
+      upBorderColor: '#0ecb81', downBorderColor: '#f6465d', noChangeBorderColor: '#848e9c',
+      upWickColor: '#0ecb81', downWickColor: '#f6465d', noChangeWickColor: '#848e9c'
     },
     priceMark: {
       show: true,
-      high: { show: true, color: '#7e838f', textOffset: 4, textSize: 10, textFamily: 'monospace', textWeight: 'normal' },
-      low: { show: true, color: '#7e838f', textOffset: 4, textSize: 10, textFamily: 'monospace', textWeight: 'normal' },
+      high: { show: true, color: '#5a6270', textOffset: 4, textSize: 10, textFamily: 'monospace', textWeight: 'normal' },
+      low: { show: true, color: '#5a6270', textOffset: 4, textSize: 10, textFamily: 'monospace', textWeight: 'normal' },
       last: {
-        show: true, upColor: '#26a69a', downColor: '#ef5350', noChangeColor: '#888888',
+        show: true, upColor: '#0ecb81', downColor: '#f6465d', noChangeColor: '#848e9c',
         line: { show: true, style: 'dashed', size: 1, dashedValue: [4, 4] },
         text: { show: true, size: 10, family: 'monospace', weight: 'normal', color: '#ffffff', paddingLeft: 4, paddingTop: 2, paddingRight: 4, paddingBottom: 2 }
       }
     },
     tooltip: {
-      showRule: 'always', showType: 'standard',
+      showRule: 'none', showType: 'standard',
       defaultValue: 'n/a',
-      text: { size: 11, family: 'monospace', color: '#d1d4dc' }
+      text: { size: 11, family: 'monospace', color: '#c7ccd4' }
     }
   },
   indicator: {
-    bars: [{ upColor: '#26a69a', downColor: '#ef5350', noChangeColor: '#888' }],
+    bars: [{ upColor: '#0ecb81', downColor: '#f6465d', noChangeColor: '#848e9c' }],
     lines: [
-      { size: 1, color: '#2962ff', style: 'solid', smooth: false },
-      { size: 1, color: '#ff9800', style: 'solid', smooth: false },
-      { size: 1, color: '#ab47bc', style: 'solid', smooth: false },
-      { size: 1, color: '#26c6da', style: 'solid', smooth: false },
-      { size: 1, color: '#eceff1', style: 'solid', smooth: false }
+      { size: 1, color: '#e8b339', style: 'solid', smooth: false },
+      { size: 1, color: '#58a6ff', style: 'solid', smooth: false },
+      { size: 1, color: '#bc8cff', style: 'solid', smooth: false },
+      { size: 1, color: '#39c5cf', style: 'solid', smooth: false },
+      { size: 1, color: '#e0e0e0', style: 'solid', smooth: false }
     ],
-    circles: [{ color: '#26a69a' }],
+    circles: [{ color: '#0ecb81' }],
     lastValueMark: { show: false, text: { show: false } },
     tooltip: {
       showRule: 'always', showType: 'standard', defaultValue: 'n/a',
-      text: { size: 10, family: 'monospace', color: '#d1d4dc' }
+      text: { size: 10, family: 'monospace', color: '#c7ccd4' }
     }
   },
   xAxis: {
     show: true, size: 'auto',
-    axisLine: { show: true, color: '#2a2e39' },
-    tickText: { show: true, color: '#7e838f', family: 'monospace', size: 10, marginStart: 4, marginEnd: 4 },
-    tickLine: { show: true, size: 1, color: '#2a2e39', length: 3 }
+    axisLine: { show: true, color: '#272e39' },
+    tickText: { show: true, color: '#6b7482', family: 'monospace', size: 10, marginStart: 4, marginEnd: 4 },
+    tickLine: { show: true, size: 1, color: '#272e39', length: 3 }
   },
   yAxis: {
     show: true, size: 'auto', type: 'normal', position: 'right', inside: false, reverse: false,
-    axisLine: { show: true, color: '#2a2e39' },
-    tickText: { show: true, color: '#7e838f', family: 'monospace', size: 10, marginStart: 4, marginEnd: 4 },
-    tickLine: { show: true, size: 1, color: '#2a2e39', length: 3 }
+    axisLine: { show: true, color: '#272e39' },
+    tickText: { show: true, color: '#6b7482', family: 'monospace', size: 10, marginStart: 4, marginEnd: 4 },
+    tickLine: { show: true, size: 1, color: '#272e39', length: 3 }
   },
-  separator: { size: 1, color: '#2a2e39', fill: true, activeBackgroundColor: '#1c2030' },
+  separator: { size: 1, color: '#272e39', fill: true, activeBackgroundColor: '#1a1f28' },
   crosshair: {
     show: true,
     horizontal: {
-      show: true, line: { show: true, style: 'dashed', size: 1, color: '#758696', dashedValue: [4, 4] },
-      text: { show: true, color: '#0f1420', backgroundColor: '#758696', size: 10, family: 'monospace', weight: 'normal', paddingLeft: 4, paddingTop: 2, paddingRight: 4, paddingBottom: 2 }
+      show: true, line: { show: true, style: 'dashed', size: 1, color: '#7d8590', dashedValue: [4, 4] },
+      text: { show: true, color: '#0c0e11', backgroundColor: '#e8b339', size: 10, family: 'monospace', weight: 'bold', paddingLeft: 4, paddingTop: 2, paddingRight: 4, paddingBottom: 2 }
     },
     vertical: {
-      show: true, line: { show: true, style: 'dashed', size: 1, color: '#758696', dashedValue: [4, 4] },
-      text: { show: true, color: '#0f1420', backgroundColor: '#758696', size: 10, family: 'monospace', weight: 'normal', paddingLeft: 4, paddingTop: 2, paddingRight: 4, paddingBottom: 2 }
+      show: true, line: { show: true, style: 'dashed', size: 1, color: '#7d8590', dashedValue: [4, 4] },
+      text: { show: true, color: '#0c0e11', backgroundColor: '#e8b339', size: 10, family: 'monospace', weight: 'bold', paddingLeft: 4, paddingTop: 2, paddingRight: 4, paddingBottom: 2 }
     }
   },
   overlay: {
-    point: { color: '#2962ff', borderColor: '#ffffff', borderSize: 1, radius: 3, activeColor: '#2962ff', activeBorderColor: '#ffffff', activeBorderSize: 2, activeRadius: 4 },
-    line: { size: 1.4, color: '#2962ff', style: 'solid', smooth: false, dashedValue: [4, 4] },
-    rect: { style: 'fill', color: 'rgba(41,98,255,0.10)', borderColor: '#2962ff', borderSize: 1.2, borderRadius: 0 },
-    circle: { style: 'fill', color: 'rgba(41,98,255,0.10)', borderColor: '#2962ff', borderSize: 1.2, borderStyle: 'solid' },
-    polygon: { style: 'fill', color: 'rgba(41,98,255,0.10)', borderColor: '#2962ff', borderSize: 1.2 },
-    arc: { size: 1.2, color: '#2962ff', style: 'solid', dashedValue: [4, 4] },
-    text: { style: 'fill', color: '#2962ff', size: 11, family: 'sans-serif', weight: 'normal' }
+    point: { color: '#e8b339', borderColor: '#ffffff', borderSize: 1, radius: 3, activeColor: '#e8b339', activeBorderColor: '#ffffff', activeBorderSize: 2, activeRadius: 4 },
+    line: { size: 1.4, color: '#e8b339', style: 'solid', smooth: false, dashedValue: [4, 4] },
+    rect: { style: 'fill', color: 'rgba(232,179,57,0.10)', borderColor: '#e8b339', borderSize: 1.2, borderRadius: 0 },
+    circle: { style: 'fill', color: 'rgba(232,179,57,0.10)', borderColor: '#e8b339', borderSize: 1.2, borderStyle: 'solid' },
+    polygon: { style: 'fill', color: 'rgba(232,179,57,0.10)', borderColor: '#e8b339', borderSize: 1.2 },
+    arc: { size: 1.2, color: '#e8b339', style: 'solid', dashedValue: [4, 4] },
+    text: { style: 'fill', color: '#e8b339', size: 11, family: 'monospace', weight: 'normal' }
   }
 };
 
@@ -89,6 +89,53 @@ export function initChart (el) {
   chart = K.init(el, { styles: darkStyles });
   chart.setOffsetRightDistance(72);
   registerCustomShapes();
+
+  // کلیک روی چارت با ابزار Trade: تبدیل پیکسل به زمان/قیمت
+  let pointerDownAt = null;
+  el.addEventListener('pointerdown', (ev) => {
+    pointerDownAt = { x: ev.clientX, y: ev.clientY };
+  });
+  el.addEventListener('click', (ev) => {
+    if (activeTool !== 'trade' || !onTradeClick) return;
+    if (Date.now() - overlayClickConsumedAt < 150) return; // کلیک روی مارکر/خط پوزیشن، نه روی چارت
+    if (pointerDownAt && Math.hypot(ev.clientX - pointerDownAt.x, ev.clientY - pointerDownAt.y) > 4) return; // درگ بوده، نه کلیک
+    const rect = el.getBoundingClientRect();
+    const res = chart.convertFromPixel(
+      { x: ev.clientX - rect.left, y: ev.clientY - rect.top },
+      { paneId: 'candle_pane', absolute: true }
+    );
+    if (!res || !Number.isFinite(res.value)) return;
+    onTradeClick(res.timestamp ?? null, res.value, { shift: ev.shiftKey, ctrl: ev.ctrlKey });
+  });
+
+  // Right-click context menu
+  el.addEventListener('contextmenu', (ev) => {
+    ev.preventDefault();
+    if (!onCtxMenuHandler) return;
+    const rect = el.getBoundingClientRect();
+    const res = chart.convertFromPixel(
+      { x: ev.clientX - rect.left, y: ev.clientY - rect.top },
+      { paneId: 'candle_pane', absolute: true }
+    );
+    if (!res || !Number.isFinite(res.value)) return;
+    onCtxMenuHandler(ev.clientX, ev.clientY, res.timestamp ?? null, res.value);
+  });
+
+  // Crosshair → bar legend
+  el.addEventListener('mousemove', (ev) => {
+    if (!crosshairListeners.size) return;
+    const rect = el.getBoundingClientRect();
+    const res = chart.convertFromPixel(
+      { x: ev.clientX - rect.left, y: ev.clientY - rect.top },
+      { paneId: 'candle_pane', absolute: true }
+    );
+    if (!res || res.timestamp == null) { notifyCrosshair(null); return; }
+    const data = chart.getDataList();
+    const candle = data.find(d => d.timestamp === res.timestamp) || null;
+    notifyCrosshair(candle);
+  });
+  el.addEventListener('mouseleave', () => { notifyCrosshair(null); });
+
   if (K.ActionType && K.ActionType.OnVisibleRangeChange) {
     chart.subscribeAction(K.ActionType.OnVisibleRangeChange, () => {
       if (!programmaticViewport && !isAtRightEdge()) {
@@ -97,6 +144,50 @@ export function initChart (el) {
       }
     });
   }
+
+  // درگ دستی خطوط SL/TP: شکار mousedown روی canvas قبل از klinecharts
+  el.addEventListener('mousedown', (ev) => {
+    if (ev.button !== 0 || !slTpLines.size) return;
+    const rect = el.getBoundingClientRect();
+    const y = ev.clientY - rect.top;
+    let hit = null;
+    for (const [stableId, info] of slTpLines) {
+      const px = chart.convertToPixel({ value: info.price }, { paneId: 'candle_pane', absolute: true });
+      if (px && Number.isFinite(px.y) && Math.abs(px.y - y) <= 6) { hit = { stableId, info, startPrice: info.price, moved: false }; break; }
+    }
+    if (!hit) return;
+    ev.stopPropagation(); // از پن/درگ خود klinecharts جلوگیری می‌کند
+    ev.preventDefault();
+    const onMove = (m) => {
+      const my = m.clientY - el.getBoundingClientRect().top;
+      const res = chart.convertFromPixel({ y: my }, { paneId: 'candle_pane', absolute: true });
+      if (!res || !Number.isFinite(res.value)) return;
+      hit.moved = true;
+      hit.info.price = res.value;
+      chart.overrideOverlay({ id: hit.stableId, points: [{ value: res.value }] });
+    };
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      if (!hit.moved || Math.abs(hit.info.price - hit.startPrice) < 1e-9) {
+        hit.info.price = hit.startPrice;
+        chart.overrideOverlay({ id: hit.stableId, points: [{ value: hit.startPrice }] });
+        consumeTradeOverlayClick(hit.info.positionId); // کلیک ساده روی خط = انتخاب پوزیشن
+        return;
+      }
+      const price = hit.info.price;
+      for (const fn of slTpDragListeners) {
+        if (fn(hit.info.positionId, hit.stableId, price) === false) { // رد شد → برگرداندن خط
+          hit.info.price = hit.startPrice;
+          chart.overrideOverlay({ id: hit.stableId, points: [{ value: hit.startPrice }] });
+          break;
+        }
+      }
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  }, true);
+
   return chart;
 }
 
@@ -106,27 +197,27 @@ export function resize () {
   if (chart) chart.resize();
 }
 
-export function applyAppearance ({ theme = 'dark', accent = '#4c8dff' } = {}) {
+export function applyAppearance ({ theme = 'dark', accent = '#e8b339' } = {}) {
   if (!chart) return;
   const light = theme === 'light';
   chart.setStyles({
     grid: {
-      horizontal: { color: light ? '#e1e6ee' : '#1d2533' },
-      vertical: { color: light ? '#e1e6ee' : '#1d2533' }
+      horizontal: { color: light ? '#e4e1d8' : '#171c24' },
+      vertical: { color: light ? '#e4e1d8' : '#171c24' }
     },
     xAxis: {
-      axisLine: { color: light ? '#cbd3df' : '#273143' },
-      tickText: { color: light ? '#58657a' : '#8994a7' },
-      tickLine: { color: light ? '#cbd3df' : '#273143' }
+      axisLine: { color: light ? '#d3cfc6' : '#272e39' },
+      tickText: { color: light ? '#61656d' : '#6b7482' },
+      tickLine: { color: light ? '#d3cfc6' : '#272e39' }
     },
     yAxis: {
-      axisLine: { color: light ? '#cbd3df' : '#273143' },
-      tickText: { color: light ? '#58657a' : '#8994a7' },
-      tickLine: { color: light ? '#cbd3df' : '#273143' }
+      axisLine: { color: light ? '#d3cfc6' : '#272e39' },
+      tickText: { color: light ? '#61656d' : '#6b7482' },
+      tickLine: { color: light ? '#d3cfc6' : '#272e39' }
     },
-    separator: { color: light ? '#cbd3df' : '#273143', activeBackgroundColor: light ? '#f0f3f8' : '#171d29' },
-    candle: { tooltip: { text: { color: light ? '#182131' : '#e6eaf0' } } },
-    indicator: { tooltip: { text: { color: light ? '#182131' : '#e6eaf0' } } },
+    separator: { color: light ? '#d3cfc6' : '#272e39', activeBackgroundColor: light ? '#efede8' : '#1a1f28' },
+    candle: { tooltip: { text: { color: light ? '#22252a' : '#c7ccd4' } } },
+    indicator: { tooltip: { text: { color: light ? '#22252a' : '#c7ccd4' } } },
     overlay: drawingStyles({ color: accent, width: drawingDefaults.width, style: drawingDefaults.style })
   });
 }
@@ -320,7 +411,7 @@ const userDrawings = new Map();
 const drawingListeners = new Set();
 let activeTool = 'none';
 let selectedDrawingId = null;
-let drawingDefaults = { color: '#4c8dff', width: 2, style: 'solid' };
+let drawingDefaults = { color: '#e8b339', width: 2, style: 'solid' };
 
 function drawingStyles ({ color, width, style }) {
   const dashedValue = style === 'dashed' ? [6, 4] : [4, 4];
@@ -367,7 +458,7 @@ function removeFromEvent (event) {
 
 export function setTool (name) {
   activeTool = name;
-  if (name === 'none') {
+  if (name === 'none' || name === 'trade') {
     notifyDrawings();
     return null;
   }
@@ -458,12 +549,57 @@ export function clearDrawings () {
   notifyDrawings();
 }
 
+let onTradeClick = null;
+export function setTradeClickHandler (fn) {
+  onTradeClick = fn;
+}
+
+let onCtxMenuHandler = null;
+export function setContextMenuHandler (fn) {
+  onCtxMenuHandler = fn;
+}
+
+let crosshairListeners = new Set();
+export function onCrosshairChange (fn) {
+  crosshairListeners.add(fn);
+  return () => crosshairListeners.delete(fn);
+}
+function notifyCrosshair (candle) {
+  for (const fn of crosshairListeners) fn(candle);
+}
+
+// وقتی کاربر روی مارکر/خط پوزیشن کلیک می‌کند، آن کلیک نباید سفارش جدید باز کند
+let overlayClickConsumedAt = 0;
+function consumeTradeOverlayClick (positionId) {
+  overlayClickConsumedAt = Date.now();
+  if (positionId) notifyPositionClick(positionId);
+}
+
 // ---------- Trading overlays ----------
 
 const tradeOverlays = new Set();
 const pendingOverlays = new Set();
+const tradeBands = new Map();
+const pnlLabels = new Map();
 
-export function addTradeMarker ({ timestamp, value, text, color }) {
+let selectedPositionId = null;
+const positionClickListeners = new Set();
+
+function notifyPositionClick (positionId) {
+  for (const fn of positionClickListeners) fn(positionId);
+}
+
+export function onPositionClick (fn) {
+  positionClickListeners.add(fn);
+  return () => positionClickListeners.delete(fn);
+}
+
+export function selectPositionOverlay (id) {
+  selectedPositionId = id;
+  notifyPositionClick(id);
+}
+
+export function addTradeMarker ({ timestamp, value, text, color, positionId }) {
   const id = 'trade_' + timestamp + '_' + Math.random().toString(36).slice(2, 7);
   chart.createOverlay({
     id,
@@ -476,7 +612,8 @@ export function addTradeMarker ({ timestamp, value, text, color }) {
       line: { style: 'dashed', color },
       polygon: { color, borderColor: color },
       text: { color, size: 10, family: 'monospace', weight: 'bold' }
-    }
+    },
+    onClick: () => consumeTradeOverlayClick(positionId)
   });
   tradeOverlays.add(id);
   return id;
@@ -486,6 +623,7 @@ export function removeTradeMarker (id) {
   if (tradeOverlays.has(id)) {
     chart.removeOverlay(id);
     tradeOverlays.delete(id);
+    slTpLines.delete(id);
   }
 }
 
@@ -494,10 +632,13 @@ export function clearTradeMarkers () {
     try { chart.removeOverlay(id); } catch (e) { /* ignore */ }
   }
   tradeOverlays.clear();
+  slTpLines.clear();
+  tradeBands.clear();
+  pnlLabels.clear();
   clearPendingOrderLines();
 }
 
-export function addPriceLine (value, color, title) {
+export function addPriceLine (value, color, title, positionId) {
   const id = 'pl_' + Math.random().toString(36).slice(2, 9);
   chart.createOverlay({
     id,
@@ -506,13 +647,41 @@ export function addPriceLine (value, color, title) {
     lock: true,
     points: [{ value }],
     extendData: { text: title || '' },
-    styles: { line: { color, size: 1, style: 'dashed', dashedValue: [6, 4] } }
+    styles: { line: { color, size: 1, style: 'dashed', dashedValue: [6, 4] } },
+    onClick: () => consumeTradeOverlayClick(positionId)
   });
   tradeOverlays.add(id);
   return id;
 }
 
-export function addPendingOrderLine (id, value, color, title) {
+// خط SL/TP قابل کشیدن (درگ دستی روی canvas تا نادیده‌گرفته نشود)
+const slTpDragListeners = new Set();
+const slTpLines = new Map(); // stableId → { positionId, price }
+export function onSlTpLineDrag (fn) {
+  slTpDragListeners.add(fn);
+  return () => slTpDragListeners.delete(fn);
+}
+
+export function addSlTpLine (stableId, value, color, title, positionId) {
+  slTpLines.set(stableId, { positionId, price: value });
+  chart.createOverlay({
+    id: stableId,
+    groupId: TRADE_GROUP,
+    name: 'priceLine',
+    lock: true,
+    points: [{ value }],
+    extendData: { text: title || '' },
+    styles: {
+      line: { color, size: 1.5, style: 'dashed', dashedValue: [6, 4] },
+      point: { color, borderColor: color, radius: 0, activeRadius: 0 }
+    },
+    onClick: () => consumeTradeOverlayClick(positionId)
+  });
+  tradeOverlays.add(stableId);
+  return stableId;
+}
+
+export function addPendingOrderLine (id, value, color, title, positionId) {
   const overlayId = 'pending_' + id;
   chart.createOverlay({
     id: overlayId,
@@ -521,7 +690,8 @@ export function addPendingOrderLine (id, value, color, title) {
     lock: true,
     points: [{ value }],
     extendData: { text: title },
-    styles: { line: { color, size: 1, style: 'dashed', dashedValue: [5, 4] } }
+    styles: { line: { color, size: 1, style: 'dashed', dashedValue: [5, 4] } },
+    onClick: () => consumeTradeOverlayClick(positionId)
   });
   pendingOverlays.add(overlayId);
   return overlayId;
@@ -538,4 +708,91 @@ export function clearPendingOrderLines () {
     try { chart.removeOverlay(id); } catch (e) { /* ignore */ }
   }
   pendingOverlays.clear();
+}
+
+// ---------- Trade bands (risk/reward zones) ----------
+
+export function addTradeBand (positionId, entryPrice, sl, tp, dir, barStart, barEnd) {
+  removeTradeBand(positionId);
+  const startTs = barStart;
+  const endTs = barEnd;
+  const ids = {};
+
+  if (sl != null) {
+    const riskTop = dir > 0 ? entryPrice : sl;
+    const riskBottom = dir > 0 ? sl : entryPrice;
+    const id = 'band_risk_' + positionId;
+    chart.createOverlay({
+      id, groupId: TRADE_GROUP, name: 'rectx', lock: true,
+      points: [{ timestamp: startTs, value: riskTop }, { timestamp: endTs, value: riskBottom }],
+      styles: { rect: { style: 'fill', color: 'rgba(246,70,93,0.12)', borderColor: 'rgba(246,70,93,0.3)', borderSize: 0 } }
+    });
+    tradeOverlays.add(id);
+    ids.riskId = id;
+  }
+
+  if (tp != null) {
+    const rewardTop = dir > 0 ? tp : entryPrice;
+    const rewardBottom = dir > 0 ? entryPrice : tp;
+    const id = 'band_reward_' + positionId;
+    chart.createOverlay({
+      id, groupId: TRADE_GROUP, name: 'rectx', lock: true,
+      points: [{ timestamp: startTs, value: rewardTop }, { timestamp: endTs, value: rewardBottom }],
+      styles: { rect: { style: 'fill', color: 'rgba(14,203,129,0.10)', borderColor: 'rgba(14,203,129,0.25)', borderSize: 0 } }
+    });
+    tradeOverlays.add(id);
+    ids.rewardId = id;
+  }
+
+  tradeBands.set(positionId, ids);
+}
+
+export function removeTradeBand (positionId) {
+  const band = tradeBands.get(positionId);
+  if (!band) return;
+  for (const key of ['riskId', 'rewardId']) {
+    if (band[key]) {
+      try { chart.removeOverlay(band[key]); } catch (e) { /* ignore */ }
+      tradeOverlays.delete(band[key]);
+    }
+  }
+  tradeBands.delete(positionId);
+}
+
+export function updateTradeBand (positionId, entryPrice, sl, tp, dir, barStart, barEnd) {
+  addTradeBand(positionId, entryPrice, sl, tp, dir, barStart, barEnd);
+}
+
+export function clearAllTradeBands () {
+  for (const [id] of tradeBands) removeTradeBand(id);
+}
+
+// ---------- P&L labels on SL/TP lines ----------
+
+export function setSlTpPnlLabel (positionId, kind, price, pnlText, color) {
+  const stableId = `pnl_${kind}_${positionId}`;
+  removeSlTpPnlLabel(positionId, kind);
+  chart.createOverlay({
+    id: stableId, groupId: TRADE_GROUP, name: 'priceLine', lock: true,
+    points: [{ value: price }],
+    extendData: { text: '' },
+    styles: { line: { color: 'transparent', size: 0 } },
+    onDrawEnd: (event) => {
+      if (event && event.overlay) {
+        chart.overrideOverlay({ id: stableId, extendData: { text: pnlText }, styles: { text: { color, size: 9, family: 'monospace' } } });
+      }
+    }
+  });
+  tradeOverlays.add(stableId);
+  pnlLabels.set(`${kind}_${positionId}`, stableId);
+}
+
+export function removeSlTpPnlLabel (positionId, kind) {
+  const key = `${kind}_${positionId}`;
+  const id = pnlLabels.get(key);
+  if (id) {
+    try { chart.removeOverlay(id); } catch (e) { /* ignore */ }
+    tradeOverlays.delete(id);
+    pnlLabels.delete(key);
+  }
 }

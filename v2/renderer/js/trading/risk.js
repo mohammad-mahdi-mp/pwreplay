@@ -63,6 +63,31 @@ export function computeStats (closedTrades, initialBalance, { floating = 0 } = {
   };
 }
 
+// P&L محقق‌شده به تفکیک روز (بر اساس زمانی که معامله بسته شده) → { 'YYYY-MM-DD': pnl }
+export function dailyPnl (closedTrades) {
+  const map = {};
+  for (const t of closedTrades) {
+    const d = new Date(t.closeTime);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    map[key] = (map[key] || 0) + t.netPnl;
+  }
+  return map;
+}
+
+// خلاصه ماه‌ها از روی dailyPnl → [{ year, month, pnl, trades, winDays, lossDays }]
+export function monthlySummary (daily) {
+  const months = {};
+  for (const [key, pnl] of Object.entries(daily)) {
+    const [y, m] = key.split('-');
+    const mk = `${y}-${m}`;
+    if (!months[mk]) months[mk] = { year: +y, month: +m, pnl: 0, days: 0, winDays: 0, lossDays: 0 };
+    months[mk].pnl += pnl;
+    months[mk].days++;
+    if (pnl > 0) months[mk].winDays++; else if (pnl < 0) months[mk].lossDays++;
+  }
+  return Object.values(months).sort((a, b) => (b.year - a.year) || (b.month - a.month));
+}
+
 export function exportTradesCsv (closedTrades, formatTime) {
   const rows = [['id', 'side', 'volume', 'entryPrice', 'exitPrice', 'entryTime', 'closeTime', 'bars', 'grossPnl', 'commission', 'swap', 'netPnl', 'reason']];
   for (const t of closedTrades) {

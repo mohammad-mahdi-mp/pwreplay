@@ -265,7 +265,16 @@ function updateReplayControls () {
     document.getElementById('scrub-progress').textContent = state.loaded ? 'Ready' : 'No data';
   }
   document.getElementById('scrub-max').textContent = String(Math.max(0, state.candles.length - 1));
-  document.getElementById('btn-play').textContent = isPlaying() ? 'Ⅱ' : '▶';
+  setPlayIcon (isPlaying());
+}
+
+const PLAY_SVG = '<svg viewBox="0 0 16 16"><path d="M4.5 3l8 5-8 5z" fill="currentColor"/></svg>';
+const PAUSE_SVG = '<svg viewBox="0 0 16 16"><path d="M4.5 3.5h3v9h-3zM8.5 3.5h3v9h-3z" fill="currentColor"/></svg>';
+function setPlayIcon (playing) {
+  const btn = document.getElementById('btn-play');
+  if (!btn) return;
+  btn.innerHTML = playing ? PAUSE_SVG : PLAY_SVG;
+  btn.classList.toggle('playing', playing);
 }
 
 function updateBarTime () {
@@ -441,7 +450,7 @@ export function initUi () {
 
   // وضعیت پخش از موتور ریپلی (رویداد DOM سبک‌وزن)
   document.addEventListener('replay-play-state', (e) => {
-    document.getElementById('btn-play').textContent = e.detail ? 'Ⅱ' : '▶';
+    setPlayIcon(e.detail);
   });
 
   // refresh اندیکاتورها پس از تب

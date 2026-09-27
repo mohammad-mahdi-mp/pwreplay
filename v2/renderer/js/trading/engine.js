@@ -24,9 +24,9 @@ export const TRADE_REASON = {
   MARGIN_CALL: 'Margin call'
 };
 
-const LONG_COLOR = '#12b886';
-const SHORT_COLOR = '#fa5252';
-const EXIT_COLOR = '#f5a524';
+const LONG_COLOR = '#0ecb81';
+const SHORT_COLOR = '#f6465d';
+const EXIT_COLOR = '#e8b339';
 
 let cfg = { ...defaults };
 let balance = defaults.balance;
@@ -109,8 +109,9 @@ function resetInternals () {
   nextPositionId = 1;
   nextOrderId = 1;
   nextTradeId = 1;
-  lastProcessedIndex = state.mode === 'replay' ? state.replayStart - 1 : -1;
+  lastProcessedIndex = state.mode === 'replay' ? state.replayStart : -1;
   warnedMarginCall = false;
+  lastOverlaySig = null; // پاک‌سازی امضا → بازسازی کامل در رسم بعدی
 }
 
 export function resetSession (newSessionId = '') {
@@ -125,16 +126,33 @@ export function resetSession (newSessionId = '') {
 
 function drawOrderLine (order) {
   eraseOrderLine(order);
-  order.art = chartApi.addPendingOrderLine(
-    order.id, order.price,
-    order.dir > 0 ? LONG_COLOR : SHORT_COLOR,
-    `${order.id} ${order.dir > 0 ? 'BUY' : 'SELL'} ${order.type.toUpperCase()}`
-  );
+  order.art = {
+    line: chartApi.addPendingOrderLine(
+      order.id, order.price,
+      order.dir > 0 ? LONG_COLOR : SHORT_COLOR,
+      `${order.id} ${order.dir > 0 ? 'BUY' : 'SELL'} ${order.type.toUpperCase()}`,
+      order.id
+    ),
+    sl: null, tp: null
+  };
+  if (order.sl != null) order.art.sl = chartApi.addSlTpLine(`osl_${order.id}`, order.sl, SHORT_COLOR, `${order.id} SL ⬇ drag`, order.id);
+  if (order.tp != null) order.art.tp = chartApi.addSlTpLine(`otp_${order.id}`, order.tp, LONG_COLOR, `${order.id} TP ⬆ drag`, order.id);
 }
 
 function eraseOrderLine (order) {
-  if (order.art) chartApi.removePendingOrderLine(order.art);
+  if (order.art) {
+    if (order.art.line) chartApi.removePendingOrderLine(order.art.line);
+    if (order.art.sl) chartApi.removeTradeMarker(order.art.sl);
+    if (order.art.tp) chartApi.removeTradeMarker(order.art.tp);
+  }
   order.art = null;
+}
+
+function bandEnd () {
+  const last = state.candles[state.candles.length - 1];
+  if (!last) return Date.now();
+  const cur = curBar();
+  return (cur ? cur.timestamp : last.timestamp) + (last.timestamp - state.candles[0].timestamp) * 0.05;
 }
 
 function drawPositionArt (pos) {
@@ -143,20 +161,24 @@ function drawPositionArt (pos) {
   pos.art = { marker: null, entry: null, sl: null, tp: null };
   pos.art.marker = chartApi.addTradeMarker({
     timestamp: pos.entryTime, value: pos.entryPrice,
-    text: (pos.dir > 0 ? 'B▲ ' : 'S▼ ') + pos.volume, color
+    text: (pos.dir > 0 ? 'B▲ ' : 'S▼ ') + pos.volume, color,
+    positionId: pos.id
   });
-  pos.art.entry = chartApi.addPriceLine(pos.entryPrice, color, `${pos.id} Entry`);
-  if (pos.sl != null) pos.art.sl = chartApi.addPriceLine(pos.sl, SHORT_COLOR, `${pos.id} SL`);
-  if (pos.tp != null) pos.art.tp = chartApi.addPriceLine(pos.tp, LONG_COLOR, `${pos.id} TP`);
+  pos.art.entry = chartApi.addPriceLine(pos.entryPrice, color, `${pos.id} Entry`, pos.id);
+  if (pos.sl != null) pos.art.sl = chartApi.addSlTpLine(`sl_${pos.id}`, pos.sl, SHORT_COLOR, `${pos.id} SL ⬇ drag`, pos.id);
+  if (pos.tp != null) pos.art.tp = chartApi.addSlTpLine(`tp_${pos.id}`, pos.tp, LONG_COLOR, `${pos.id} TP ⬆ drag`, pos.id);
+  chartApi.addTradeBand(pos.id, pos.entryPrice, pos.sl, pos.tp, pos.dir, pos.entryTime, bandEnd());
 }
 
 function erasePositionArt (pos) {
-  if (!pos.art) return;
-  if (pos.art.marker) chartApi.removeTradeMarker(pos.art.marker);
-  for (const k of ['entry', 'sl', 'tp']) {
-    if (pos.art[k]) chartApi.removeTradeMarker(pos.art[k]);
+  if (pos.art) {
+    if (pos.art.marker) chartApi.removeTradeMarker(pos.art.marker);
+    for (const k of ['entry', 'sl', 'tp']) {
+      if (pos.art[k]) chartApi.removeTradeMarker(pos.art[k]);
+    }
+    pos.art = null;
   }
-  pos.art = null;
+  chartApi.removeTradeBand(pos.id);
 }
 
 function addExitMarker (trade) {
@@ -166,7 +188,18 @@ function addExitMarker (trade) {
   });
 }
 
-function rebuildOverlays () {
+function overlaySignature () {
+  const p = positions.map(x => `${x.id}:${x.volume}|${x.entryPrice}|${x.sl}|${x.tp}`).join(';');
+  const o = orders.map(x => `${x.id}:${x.price}|${x.type}|${x.dir}|${x.sl}|${x.tp}`).join(';');
+  return `${p}#${o}#${closedTrades.length}`;
+}
+
+let lastOverlaySig = null;
+
+function rebuildOverlays (force = false) {
+  const sig = overlaySignature();
+  if (!force && sig === lastOverlaySig) return;   // بدون تغییر ساختاری: از پاک/رسم مجدد سنگین صرف‌نظر کن
+  lastOverlaySig = sig;
   chartApi.clearTradeMarkers();
   for (const trade of closedTrades) {
     const color = trade.dir > 0 ? LONG_COLOR : SHORT_COLOR;
@@ -295,6 +328,10 @@ export function modifyPosition (id, { sl, tp } = {}) {
   return userAction('modify', { id, sl, tp });
 }
 
+export function modifyOrder (id, { sl, tp } = {}) {
+  return userAction('modify-order', { id, sl, tp });
+}
+
 function userAction (kind, params) {
   const result = applyAction({ kind, params });
   if (result.ok) {
@@ -348,6 +385,18 @@ function applyAction ({ kind, params }, barIndex) {
       if (!batch) drawPositionArt(pos);
       return { ok: true, msg: `${pos.id} updated` };
     }
+    case 'modify-order': {
+      const order = orders.find(o => o.id === params.id);
+      if (!order) return { ok: false, msg: 'Pending order not found' };
+      const newSl = params.sl === undefined ? order.sl : params.sl;
+      const newTp = params.tp === undefined ? order.tp : params.tp;
+      const err = validateProtection(order.dir, order.price, newSl, newTp, order.price);
+      if (err) return { ok: false, msg: err };
+      order.sl = newSl;
+      order.tp = newTp;
+      if (!batch) drawOrderLine(order);
+      return { ok: true, msg: `${order.id} updated` };
+    }
     default:
       return { ok: false, msg: 'Unknown action' };
   }
@@ -378,7 +427,7 @@ function validatePending (params, market) {
   const { type, dir, price, volume, sl, tp } = params;
   if (!['limit', 'stop'].includes(type)) return 'Unsupported order type';
   if (!Number.isFinite(price) || price <= 0) return 'Trigger price must be a valid positive number';
-  const err = validateVolume(volume) || validateProtection(dir, price, sl, tp, market);
+  const err = validateVolume(volume) || validateProtection(dir, price, sl, tp, price);
   if (err) return err;
   if (type === 'limit' && dir > 0 && price >= market) return 'Buy Limit price must be below the market';
   if (type === 'limit' && dir < 0 && price <= market) return 'Sell Limit price must be above the market';
@@ -499,6 +548,20 @@ function closePositionInternal (id, portion, bar, reason, levelPrice = null) {
 }
 
 // ---------- بازپخش برای عقب‌گرد ----------
+
+export function undoLastAction () {
+  if (!actionLog.length) return { ok: false, msg: 'Nothing to undo' };
+  actionLog.pop();
+  const idx = curIndex();
+  batch = true;
+  resetInternals();
+  const upto = Math.min(idx, state.candles.length - 1);
+  while (lastProcessedIndex < upto) onBar(lastProcessedIndex + 1);
+  batch = false;
+  warnedMarginCall = false;
+  afterChange('undo');
+  return { ok: true, msg: 'Last action undone' };
+}
 
 export function rewindTo (targetIndex) {
   const log = actionLog;
