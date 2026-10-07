@@ -1,11 +1,13 @@
 {
   "name": "fx-replay",
   "productName": "Market Replay",
-  "version": "1.0.0",
+  "version": "3.0.0",
   "main": "main.js",
   "scripts": {
-    "start": "electron .",
-    "start:v2": "electron v2/main.js"
+    "start": "electron v3/main.js",
+    "start:v1": "electron .",
+    "start:v2": "electron v2/main.js",
+    "start:v3": "electron v3/main.js"
   },
   "author": "",
   "license": "MIT",
